@@ -72,6 +72,32 @@ function GameBoy() {
     }
   };
 
+  const handleAC = async (buttonLabel) => {
+    const angles = buttonServoAngles[buttonLabel] || [90]; // Default to [90] if undefined
+  
+    try {
+      const response = await fetch(`${ESP_IP}/servo`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(angles),
+      });
+  
+      const result = await response.text();
+      console.log("ESP32 Response:", result);
+  
+      // 🔹 Properly update the screen message
+      const statusText = buttonLabel === "A" ? "AC is turned off" : "AC is turned on";
+      setScreenMessage(statusText);  // ← Fix: Now updating the screen message
+    } catch (error) {
+      console.error("Error sending data to ESP32:", error);
+      setScreenMessage("Error: ESP32 Not Responding");
+    }
+  };
+  
+
+  
   return (
     <div className="min-h-screen bg-black flex flex-col items-center justify-center p-4">
       <div className="bg-gray-900 border-4 border-cyan-400 rounded-xl p-6 shadow-2xl shadow-cyan-400">
@@ -96,8 +122,8 @@ function GameBoy() {
 
           {/* 🔴 Action Buttons (A & B) */}
           <div className="flex flex-col items-center">
-            <NeonButton label="A" onClick={() => handleToggle("A")} extraClasses="w-16 h-16 rounded-full" />
-            <NeonButton label="B" onClick={() => handleToggle("B")} extraClasses="w-16 h-16 rounded-full" />
+            <NeonButton label="A" onClick={() => handleAC("A")} extraClasses="w-16 h-16 rounded-full" />
+            <NeonButton label="B" onClick={() => handleAC("B")} extraClasses="w-16 h-16 rounded-full" />
           </div>
         </div>
 
