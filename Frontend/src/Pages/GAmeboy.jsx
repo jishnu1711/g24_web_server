@@ -26,7 +26,7 @@ function GameBoy() {
   });
 
   // 🔹 State to show last action on the "screen"
-  const [screenMessage, setScreenMessage] = useState("Welcome to Neon Game Boy!");
+  const [screenMessage, setScreenMessage] = useState("ESP Air Commander");
 
   // 🔹 ESP32 IP (Update if needed)
   const ESP_IP = "http://192.168.61.134"; // Change this to match your ESP32 IP
@@ -112,25 +112,25 @@ function GameBoy() {
           
           {/* 🎮 D-Pad (Up, Down, Left, Right) */}
           <div className="flex flex-col items-center">
-            <NeonButton label="↑" onClick={() => handleToggle("up")} extraClasses="w-12 h-12" />
+            {/* <NeonButton label="↑" onClick={() => handleToggle("up")} extraClasses="w-12 h-12" /> */}
             <div className="flex">
-              <NeonButton label="←" onClick={() => handleToggle("left")} extraClasses="w-12 h-12" />
+              {/* <NeonButton label="←" onClick={() => handleToggle("left")} extraClasses="w-12 h-12" />
               <NeonButton label="↓" onClick={() => handleToggle("down")} extraClasses="w-12 h-12" />
-              <NeonButton label="→" onClick={() => handleToggle("right")} extraClasses="w-12 h-12" />
+              <NeonButton label="→" onClick={() => handleToggle("right")} extraClasses="w-12 h-12" /> */}
             </div>
           </div>
 
           {/* 🔴 Action Buttons (A & B) */}
           <div className="flex flex-col items-center">
-            <NeonButton label="A" onClick={() => handleAC("A")} extraClasses="w-16 h-16 rounded-full" />
-            <NeonButton label="B" onClick={() => handleAC("B")} extraClasses="w-16 h-16 rounded-full" />
+            {/* <NeonButton label="A" onClick={() => handleAC("A")} extraClasses="w-16 h-16 rounded-full" /> */}
+            <NeonButton label="On/Off" onClick={() => handleAC("B")} extraClasses=" rounded-full" />
           </div>
         </div>
 
         {/* 🔹 Start and Select Buttons */}
         <div className="flex justify-center mt-6 space-x-8">
-          <NeonButton label="Start" onClick={() => handleToggle("start")} extraClasses="px-6 py-2" />
-          <NeonButton label="Select" onClick={() => handleToggle("select")} extraClasses="px-6 py-2" />
+          {/* <NeonButton label="Start" onClick={() => handleToggle("start")} extraClasses="px-6 py-2" />
+          <NeonButton label="Select" onClick={() => handleToggle("select")} extraClasses="px-6 py-2" /> */}
         </div>
       </div>
     </div>
