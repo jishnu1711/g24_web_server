@@ -28,7 +28,7 @@ function GameBoy() {
   // 🔹 State to show last action on the "screen"
   const [screenMessage, setScreenMessage] = useState("Welcome to Neon Game Boy!");
   // 🔹 ESP32 IP (Update if needed)
-  const ESP_IP = "http://192.168.203.215"; // Change this to match your ESP32 IP
+  const ESP_IP = "http://19:04:55.267"; // Change this to match your ESP32 IP
 
   // 🔹 Button angles mapping
   const buttonServoAngles = {
