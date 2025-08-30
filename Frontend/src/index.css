@@ -1,3 +1,22 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Make the inner color swatch round */
+input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+    border-radius: 9999px;
+  }
+  
+  input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 9999px;
+  }
+  
+  /* Remove the white square look */
+  input[type="color"] {
+    background: none;
+    border-radius: 9999px;
+    overflow: hidden;
+  }
+  
