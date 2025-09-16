@@ -1,88 +1,119 @@
+#include <Wire.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
+#include <WebServer.h>
+#include <Adafruit_PWMServoDriver.h>
 #include <ArduinoJson.h>
 
-const char* ssid = "vivo T1 5G";
+// ==== Wi-Fi config ====
+const char* ssid     = "vivo T1 5G";
 const char* password = "1234567890";
 
-AsyncWebServer server(80);
+// ==== HTTP server ====
+WebServer server(80);
 
-void handleServo(AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-    StaticJsonDocument<200> doc;
+// ==== PCA9685 servo driver ====
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 
-    // Convert raw data to a string before parsing
-    char jsonBuffer[len + 1];
-    memcpy(jsonBuffer, data, len);
-    jsonBuffer[len] = '\0';  // Null-terminate the string
+// Servo pulse parameters for PCA9685
+#define SERVOMIN 150  // Min pulse length count
+#define SERVOMAX 600  // Max pulse length count
 
-    Serial.print("Raw JSON: ");
-    Serial.println(jsonBuffer);
+int angleToPulse(int ang) {
+  return map(ang, 0, 180, SERVOMIN, SERVOMAX);
+}
 
-    // Parse the JSON
-    DeserializationError error = deserializeJson(doc, jsonBuffer);
-    if (error) {
-        Serial.println("JSON Parsing Failed!");
+// Servo sweep for ON (press ON then return to 0)
+void servoOn(int channel) {
+  for (int pos = 0; pos <= 90; pos += 2) {
+    pwm.setPWM(channel, 0, angleToPulse(pos));
+    delay(15);
+  }
+  delay(200);  // hold press
+  // optional: disable pulses or move back as needed
+}
 
-        // Create response with CORS header
-        AsyncWebServerResponse *response = request->beginResponse(400, "text/plain", "Invalid JSON");
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
-        return;
-    }
+// Servo sweep for OFF (press OFF then return to 0)
+void servoOff(int channel) {
+  for (int pos = 90; pos >= 0; pos -= 2) {
+    pwm.setPWM(channel, 0, angleToPulse(pos));
+    delay(15);
+  }
+  delay(200);  // hold press
+  // optional: disable pulses or leave at 0
+}
 
-    Serial.print("Received Servo Angles: ");
-    for (JsonVariant value : doc.as<JsonArray>()) {
-        Serial.print(value.as<int>());
-        Serial.print(" ");
-    }
-    Serial.println();
+// CORS helper
+void sendCORS() {
+  server.sendHeader("Access-Control-Allow-Origin", "*");
+  server.sendHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  server.sendHeader("Access-Control-Allow-Headers", "Content-Type");
+}
 
-    // Send response with CORS enabled
-    AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", "Servo Angles Received");
-    response->addHeader("Access-Control-Allow-Origin", "*");
-    request->send(response);
+void handleOptions() {
+  sendCORS();
+  server.send(204); // No Content
+}
+
+void handleServoPost() {
+  sendCORS();
+
+  String body = server.arg("plain");
+  DynamicJsonDocument doc(256);
+  DeserializationError err = deserializeJson(doc, body);
+  if (err) {
+    server.send(400, "text/plain", "Bad JSON");
+    return;
+  }
+
+  int sw = doc["switch"] | 0;  // expects 1..16
+  int state = doc["state"] | -1; // expects 0 or 1
+
+  if (sw < 1 || sw > 16 || (state != 0 && state != 1)) {
+    server.send(400, "text/plain", "Invalid payload");
+    return;
+  }
+
+  int channel = sw - 1; // PCA9685 is 0..15
+  if (state == 1) {
+    servoOn(channel);
+  } else {
+    servoOff(channel);
+  }
+
+  // Optionally stop PWM after action:
+  // pwm.setPWM(channel, 0, 0);
+
+  server.send(200, "text/plain", "OK");
 }
 
 void setup() {
-    Serial.begin(115200);
+  Serial.begin(115200);
 
-    WiFi.begin(ssid, password);
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        Serial.print(".");
-    }
-    Serial.println("\nWiFi Connected!");
-    Serial.print("ESP32 IP: ");
-    Serial.println(WiFi.localIP());
+  // --- PCA9685 init ---
+  pwm.begin();
+  pwm.setPWMFreq(60); // ~60 Hz typical for analog servos
 
-    // Handle preflight OPTIONS request for /servo
-    server.on("/servo", HTTP_OPTIONS, [](AsyncWebServerRequest *request) {
-      AsyncWebServerResponse *response = request->beginResponse(200);
-      response->addHeader("Access-Control-Allow-Origin", "*");
-      response->addHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-      response->addHeader("Access-Control-Allow-Headers", "Content-Type");
-      request->send(response);
-    });
+  // --- Wi-Fi ---
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+  Serial.print("Connecting");
+  while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print("."); }
+  Serial.println();
+  Serial.print("IP: "); Serial.println(WiFi.localIP());
 
-    // Handle POST requests to /servo
-    server.on("/servo", HTTP_POST, 
-        [](AsyncWebServerRequest *request){},
-        NULL,
-        [](AsyncWebServerRequest *request, uint8_t *data, size_t len, size_t index, size_t total) {
-            handleServo(request, data, len, index, total);
-        }
-    );
+  // --- HTTP routes ---
+  server.on("/servo", HTTP_OPTIONS, handleOptions);
+  server.on("/servo", HTTP_POST, handleServoPost);
 
-    // Handle 404 (Not Found) errors with CORS support
-    server.onNotFound([](AsyncWebServerRequest *request) {
-        AsyncWebServerResponse *response = request->beginResponse(404, "text/plain", "Not Found");
-        response->addHeader("Access-Control-Allow-Origin", "*");
-        request->send(response);
-    });
+  // Optional home route to sanity check server is up
+  server.on("/", HTTP_GET, []() {
+    sendCORS();
+    server.send(200, "text/plain", "ESP32 servo server is running");
+  });
 
-    server.begin();
+  server.begin();
 }
 
 void loop() {
-    // Everything is handled asynchronously
+  server.handleClient();
 }
