@@ -31,7 +31,7 @@ function GameBoy() {
 
   const [screenMessage, setScreenMessage] = useState("Welcome to Neon Game Boy!");
   const [selectedColor, setSelectedColor] = useState("#00ffff"); // Default cyan
-  const ESP_IP = "http://192.168.39.197";
+  const ESP_IP = "http://192.168.81.215";
 
   const buttonServoAngles = {
     up: [0, 45, 90],
