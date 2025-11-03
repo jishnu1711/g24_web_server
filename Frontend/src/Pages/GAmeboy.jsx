@@ -161,7 +161,7 @@ const KeyboardController = () => {
   const [activeStates, setActiveStates] = useState({}); // { [switchNumber]: 'on' | 'off' | null }
   const [neon, setNeon] = useState("#22d3ee"); // default cyan
   const [layout, setLayout] = useState("strip"); // 'strip' (1D) or 'grid' (2D)
-  const ESP_IP = "http://192.168.143.215";
+  const ESP_IP = "http://192.168.81.215";
 
   // Derived glow for headings/containers
   const glow1 = hexToRgba(neon, 0.6);
